@@ -1,5 +1,6 @@
 # Temporary directories
 .vs/
+Debug/
 
 # Compiled Object files
 *.slo
