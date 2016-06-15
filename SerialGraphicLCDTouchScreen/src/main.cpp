@@ -1,9 +1,28 @@
 /*
- * TouchScreenTest.cpp
- *
- * Created: 6/9/2016 11:42:21 PM
- * Author : Monkey
- */ 
+The MIT License (MIT)
+Copyright (c) 2016 Scott McCain
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+and associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*******************************************************************************************************************
+* Filename:	main.cpp
+* Created:	6/14/2016 5:23:41 PM
+* Author:	Scott McCain
+*******************************************************************************************************************
+*
+*/
 
 #define F_CPU 16000000UL
 
@@ -25,7 +44,7 @@
 
 int main(void)
 {
-	char x, y, z, temp, q, r;	//variables used for loops, buffering of command bytes, counters etc.
+	char cmd, subcmd, x, y, v, w, r;	//variables used for loops, buffering of command bytes, counters etc.
 	uint16_t color;		//counters for long stuff that may go over 256
 	uint8_t pressureThreshhold = 10;
 
@@ -52,173 +71,111 @@ int main(void)
 			}
 
 		} else {
-			x = USART_recv();
-			switch(x) {		//switch based on received character
+			cmd = USART_recv();
+			switch(cmd) {
 
-				//--------------------------------------------------------------------------------------------------------------------
-				case 124:					//received character indicated a coming command
-				y = USART_recv();
+				case 124:
+					subcmd = USART_recv();
 
-				switch(y) {				//switch to which command was sent
-					case 1:	//clear screen
-						LCD_paint_screen_black();
-					break;
-					//************************************************************************************************************
-					case 3:	//draw circle
-						//need 4 bytes, RX_read already pointing at the first
-							//wait for byte (x coord of circle)
-						y = USART_recv();	//get char from buffer
-							//wait for byte (y coord of circle)
-						z = USART_recv();	//get char from buffer
-							//wait for byte (r of circle)
-						r = USART_recv();	//store it and increment RX_read
-							//wait for byte (S_R of circle)
+					switch(subcmd) {
+
+						case 1:	//clear screen
+							LCD_paint_screen_black();
+						break;
+						//************************************************************************************************************
+						case 3:	//draw circle
+							x = USART_recv();
+							y = USART_recv();
+							r = USART_recv();
+
+								// get integer color
+							color = USART_recv();
+							color = color << 8;
+							color |= USART_recv();  
+
+							LCD_drawCircle(x, y, r, color);
+						break;
+						case 4:
+							x = USART_recv();
+							y = USART_recv();
+							r = USART_recv();
 
 							// get integer color
-						color = USART_recv();	//store it and increment RX_read
-						color = color << 8;
-						color |= USART_recv();  
+							color = USART_recv();	//store it and increment RX_read
+							color = color << 8;
+							color |= USART_recv();
 
-						LCD_drawCircle(y, z, r, color);
-					break;
-					case 4:
-						y = USART_recv();	//get char from buffer
-						//wait for byte (y coord of circle)
-						z = USART_recv();	//get char from buffer
-						//wait for byte (r of circle)
-						r = USART_recv();	//store it and increment RX_read
-						//wait for byte (S_R of circle)
+							LCD_fillCircle(x, y, r, color);
+						break;
+						case 12:	//line
+							x = USART_recv();
+							y = USART_recv();
+							v = USART_recv();
+							w = USART_recv();
 
-						// get integer color
-						color = USART_recv();	//store it and increment RX_read
-						color = color << 8;
-						color |= USART_recv();
+							// get integer color
+							color = USART_recv();
+							color = color << 8;
+							color |= USART_recv();
 
-						LCD_fillCircle(y, z, r, color);
-					break;
-					//************************************************************************************************************
-					case 12:	//line
-						//need 5 bytes, RX_read already pointing at the first
-					
-							//wait for byte (x coord of start)
-						y = USART_recv();	//store it and increment RX_read
- 							//wrap if necessary
-						
-							//wait for byte (y coord of start)
-						z = USART_recv();	//store it and increment RX_read
- 							//wrap if necessary
+							LCD_drawLine(x, y, v, w, color);
+						break;
+						//************************************************************************************************************
+ 						case 15:
+							x = USART_recv();
+							y = USART_recv();
+							v = USART_recv();
+							w = USART_recv();
 
-							//wait for byte (x coord of end)
-						temp = USART_recv();	//store it and increment RX_read
- 							//wrap if necessary
+							// get integer color
+							color = USART_recv();
+							color = color << 8;
+							color |= USART_recv();
 
-							//wait for byte (y coord of end)
-						q = USART_recv();	//store it and increment RX_read
- 							//wrap if necessary
+							LCD_drawRectangle(x, y, v, w, color);
+						break;
+						//************************************************************************************************************
+						case 16:		//set pixel
+							x = USART_recv();
+							y = USART_recv();
 
-						// get integer color
-						color = USART_recv();	//store it and increment RX_read
-						color = color << 8;
-						color |= USART_recv();
-
-						LCD_drawLine(y ,z , temp, q, color);
-					break;
-					//************************************************************************************************************
- 					case 15:	//draw box
-						//need 5 bytes, RX_read already pointing at the first
-					
-							//wait for byte (x coord of corner1)
-						y = USART_recv();	//store it and increment RX_read
- 							//wrap if necessary
-						
-							//wait for byte (y coord of corner1)
-						z = USART_recv();	//store it and increment RX_read
- 							//wrap if necessary
-
-							//wait for byte (x coord of corner2)
-						temp = USART_recv();	//store it and increment RX_read
- 							//wrap if necessary
-
-							//wait for byte (y coord of corner2)
-						q = USART_recv();	//store it and increment RX_read
- 							//wrap if necessary
-
-						// get integer color
-						color = USART_recv();	//store it and increment RX_read
-						color = color << 8;
-						color |= USART_recv();
-
-						LCD_drawRectangle(y ,z , temp, q, color);
-					break;
-					//************************************************************************************************************
-					case 16:		//set pixel
-						//need 3 bytes, RX_read already pointing at the first
-					
-							//wait for byte (x coord of pixel)
-						z = USART_recv();	//store it and increment RX_read
- 							//wrap if necessary
-
-							//wait for byte (y coord of pixel)d
-						temp = USART_recv();
- 					
-
-							//wait for byte (S_R of pixel)
-						// get integer color
-						color = USART_recv();	//store it and increment RX_read
-						color = color << 8;
-						color |= USART_recv();
+							color = USART_recv();
+							color = color << 8;
+							color |= USART_recv();
  					
 					
-						LCD_setPixel(z, temp, color);		//draw the pixel
-					break;
-					//************************************************************************************************************
-					// ASCII 17 is XON so we can't use it for a command
-					case 18:	//draw filled box
-						//need 5 bytes, RX_read already pointing at the first
-					
-							//wait for byte (x coord of corner1)
-						y = USART_recv();	//store it and increment RX_read
- 							//wrap if necessary
-						
-							//wait for byte (y coord of corner1)
-						z = USART_recv();	//store it and increment RX_read
- 							//wrap if necessary
+							LCD_setPixel(x, y, color);
+						break;
+						case 18:
+							x = USART_recv();
+							y = USART_recv();
+							v = USART_recv();
+							w = USART_recv();
 
-							//wait for byte (x coord of corner2)
-						temp = USART_recv();	//store it and increment RX_read
- 							//wrap if necessary
+							// get integer color
+							color = USART_recv();
+							color = color << 8;
+							color |= USART_recv();
 
-							//wait for byte (y coord of corner2)
-						q = USART_recv();	//store it and increment RX_read
- 							//wrap if necessary
-					
-							//wait for byte (fill)
-						// get integer color
-						color = USART_recv();	//store it and increment RX_read
-						color = color << 8;
-						color |= USART_recv();
- 							//wrap if necessary
+							LCD_fillRectangle(x, y, v, w, color);
+						break;
+						case 20: // draw text
+							x = USART_recv();
 
+							y = USART_recv();
 
-						LCD_fillRectangle(y ,z , temp, q, color);
-					break;
-					case 20: // draw text
-						y = USART_recv();
+							// size
+							r = USART_recv();
 
-						z = USART_recv();
+							// get integer color
+							color = USART_recv();	//store it and increment RX_read
+							color = color << 8;
+							color |= USART_recv();
 
-						// size
-						temp = USART_recv();
-
-						// get integer color
-						color = USART_recv();	//store it and increment RX_read
-						color = color << 8;
-						color |= USART_recv();
-
-						// send string end with 0
-						LCD_drawString(NULL, y, z, temp, color, USART_recv);
-					break;
-				}
+							// send string end with 0
+							LCD_drawString(NULL, x, y, r, color, USART_recv);
+						break;
+					}
 				break;
 			}
 		}

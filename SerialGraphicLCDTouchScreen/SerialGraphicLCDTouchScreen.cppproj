@@ -193,7 +193,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="include" />
     <Folder Include="lib\" />
     <Folder Include="lib\include" />
     <Folder Include="lib\src" />
