@@ -26,7 +26,7 @@
 int main(void)
 {
 	char x, y, z, temp, q, r;	//variables used for loops, buffering of command bytes, counters etc.
-	uint16_t count, count2, color;		//counters for long stuff that may go over 256
+	uint16_t color;		//counters for long stuff that may go over 256
 	uint8_t pressureThreshhold = 10;
 
 	TouchScreen_init();
